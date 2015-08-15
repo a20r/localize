@@ -24,7 +24,7 @@ def generate_error_function(anchors, dists):
             p = point.Point(x, y, z)
         err = 0
         for anchor, dist in zip(anchors, dists):
-            err += abs(dist - p.dist_to(anchor))
+            err += pow(dist - p.dist_to(anchor), 2)
         return err
     return ef
 
@@ -74,8 +74,11 @@ if __name__ == "__main__":
     anchors.append(point.Point(0, -1))
     anchors.append(point.Point(0, 1))
     anchors.append(point.Point(0, 2))
-    source = point.Point(0, 0)
-    sigma = 0.001
+    source = point.Point(0, 0, 1)
+    sigma = 0.01
+    import time
     dists = simulate_dists(anchors, source, sigma)
-    print locations(anchors, dists)
+    s = time.time()
+    locs = locations(anchors, dists)
+    print locs
     plot_error(anchors, dists, plt).show()
