@@ -6,20 +6,22 @@ import numpy as np
 import random
 
 
-def simulate_dists(anchors, source, sigma):
-    dists = list()
-    for anchor in anchors:
+def simulate_dists(anchors, source, sigma, num_samples=1):
+    if type(sigma) == float or type(sigma) == int:
+        sigmas = np.array([sigma for _ in xrange(len(anchors))])
+    dists = np.zeros((len(anchors), num_samples))
+    for i, anchor in enumerate(anchors):
         r_dist = anchor.dist_to(source)
-        dists.append(r_dist + random.gauss(0, sigma))
+        dists[i] = r_dist + random.gauss(0, sigmas[i])
     return dists
 
 
 def generate_error_function(anchors, dists):
-    def ef(x, y=None):
+    def ef(x, y=None, z=0):
         if y is None:
-            p = point.Point(x[0], x[1])
+            p = point.Point(x[0], x[1], x[2])
         else:
-            p = point.Point(x, y)
+            p = point.Point(x, y, z)
         err = 0
         for anchor, dist in zip(anchors, dists):
             err += abs(dist - p.dist_to(anchor))
@@ -42,9 +44,13 @@ def get_bounds(anchors, dists):
 
 
 def locations(anchors, dists):
-    ef = generate_error_function(anchors, dists)
-    loc = opt.minimize(ef, anchors[0].to_np_array_2d())
-    return point.Point(loc.x[0], loc.x[1])
+    if dists.shape[1] == 1:
+        ef = generate_error_function(anchors, dists)
+        loc = opt.minimize(ef, anchors[0].to_np_array())
+        return point.Point(loc.x[0], loc.x[1], loc.x[2])
+    else:
+        for i in xrange(dists.shape[0]):
+            pass
 
 
 def plot_error(anchors, dists, pl, x_step=0.05, y_step=0.05):
@@ -67,8 +73,9 @@ if __name__ == "__main__":
     anchors.append(point.Point(1, 0))
     anchors.append(point.Point(0, -1))
     anchors.append(point.Point(0, 1))
+    anchors.append(point.Point(0, 2))
     source = point.Point(0, 0)
-    sigma = 0.1
+    sigma = 0.001
     dists = simulate_dists(anchors, source, sigma)
     print locations(anchors, dists)
     plot_error(anchors, dists, plt).show()

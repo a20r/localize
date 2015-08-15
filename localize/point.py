@@ -60,6 +60,9 @@ class Point(object):
     def to_np_array_2d(self):
         return np.array(self.to_list_2d())
 
+    def to_np_array(self):
+        return np.array(self.to_list())
+
     def intify(self):
         return Point(int(self.x), int(self.y), int(self.z))
 
