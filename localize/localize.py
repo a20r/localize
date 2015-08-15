@@ -1,12 +1,25 @@
 
 import point
 import matplotlib.pyplot as plt
+import scipy.optimize as opt
 import numpy as np
+import random
+
+
+def simulate_dists(anchors, source, sigma):
+    dists = list()
+    for anchor in anchors:
+        r_dist = anchor.dist_to(source)
+        dists.append(r_dist + random.gauss(0, sigma))
+    return dists
 
 
 def generate_error_function(anchors, dists):
-    def ef(x, y):
-        p = point.Point(x, y)
+    def ef(x, y=None):
+        if y is None:
+            p = point.Point(x[0], x[1])
+        else:
+            p = point.Point(x, y)
         err = 0
         for anchor, dist in zip(anchors, dists):
             err += abs(dist - p.dist_to(anchor))
@@ -14,17 +27,38 @@ def generate_error_function(anchors, dists):
     return ef
 
 
-def localize(anchors, dists):
+def get_bounds(anchors, dists):
+    x_min, x_max, y_min, y_max = None, None, None, None
+    for a, d in zip(anchors, dists):
+        if x_min is None or a.x - d < x_min:
+            x_min = a.x - d
+        if y_min is None or a.y - d < y_min:
+            y_min = a.y - d
+        if x_max is None or a.x + d > x_max:
+            x_max = a.x + d
+        if y_max is None or a.y + d > y_max:
+            y_max = a.y + d
+    return x_min, x_max, y_min, y_max
+
+
+def locations(anchors, dists):
+    ef = generate_error_function(anchors, dists)
+    loc = opt.minimize(ef, anchors[0].to_np_array_2d())
+    return point.Point(loc.x[0], loc.x[1])
+
+
+def plot_error(anchors, dists, pl, x_step=0.05, y_step=0.05):
     ef = generate_error_function(anchors, dists)
     zs = list()
-    xs = np.arange(-1.1, 1.1, 0.01)
-    ys = np.arange(-1.1, 1.1, 0.01)
+    x_min, x_max, y_min, y_max = get_bounds(anchors, dists)
+    xs = np.arange(x_min, x_max, x_step)
+    ys = np.arange(y_min, y_max, y_step)
     X, Y = np.meshgrid(xs, ys)
     for x_i, y_i in zip(np.ravel(X), np.ravel(Y)):
         zs.append(ef(x_i, y_i))
     Z = np.array(zs).reshape(X.shape)
-    plt.pcolormesh(X, Y, Z)
-    plt.show()
+    pl.pcolormesh(X, Y, Z)
+    return plt
 
 
 if __name__ == "__main__":
@@ -33,5 +67,8 @@ if __name__ == "__main__":
     anchors.append(point.Point(1, 0))
     anchors.append(point.Point(0, -1))
     anchors.append(point.Point(0, 1))
-    dists = [1, 1, 1, 1]
-    localize(anchors, dists)
+    source = point.Point(0, 0)
+    sigma = 0.1
+    dists = simulate_dists(anchors, source, sigma)
+    print locations(anchors, dists)
+    plot_error(anchors, dists, plt).show()

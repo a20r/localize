@@ -1,6 +1,7 @@
 
 import math
 import random
+import numpy as np
 
 
 class Point(object):
@@ -55,6 +56,9 @@ class Point(object):
 
     def to_list_2d(self):
         return [self.x, self.y]
+
+    def to_np_array_2d(self):
+        return np.array(self.to_list_2d())
 
     def intify(self):
         return Point(int(self.x), int(self.y), int(self.z))
